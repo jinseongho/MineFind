@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="me.ingeni.minefind.MainActivity">
+
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp">
+
+        <TextView
+            android:id="@+id/timerTxt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textSize="30sp" />
+
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:onClick="reTry"
+            android:text="RETRY?" />
+    </FrameLayout>
+
+    <GridView
+        android:id="@+id/mineMapGird"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="16dp"
+        android:columnWidth="4dp"
+        android:horizontalSpacing="4dp"
+        android:numColumns="10"
+        android:stretchMode="columnWidth"
+        android:verticalSpacing="4dp" />
+</LinearLayout>
