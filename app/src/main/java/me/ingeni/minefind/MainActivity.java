@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
 import android.support.v7.app.AlertDialog;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -61,14 +60,16 @@ public class MainActivity extends Activity {
 
         mineInit(MINE_MAP_RANGE, MINE_COUNT);
 
+        /**
+         * ItemClick을 하면 mapClickList와 mineFlagList에 현재 위치값이 없으면 mineMapClick()을 실행합니다.
+         * **/
+
         mineMapGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                if (!mapClickList.contains(position)) {
-                    if (!mineFlagList.contains(position)) {
-                        mineMapClick(position, parent);
-                    }
+                if (!mapClickList.contains(position) && !mineFlagList.contains(position)) {
+                    mineMapClick(position, parent);
                 }
             }
         });
@@ -117,7 +118,6 @@ public class MainActivity extends Activity {
          * **/
 
         actionCount++;
-
         if (actionCount == 1 && mineArray[position].equals("mine")) {
             reTry(null);
         } else {
@@ -178,9 +178,6 @@ public class MainActivity extends Activity {
             mineArray[mineList.get(k)] = "mine";
         }
 
-        Log.e("MINE_CONST : ", "" + MINE_CONST);
-        Log.e("mineList : ", mineList.toString());
-
         mineMapAdapter = new MineMapAdapter(MainActivity.this, MINE_MAP_RANGE);
         mineMapGrid.setAdapter(mineMapAdapter);
 
@@ -215,7 +212,8 @@ public class MainActivity extends Activity {
         /**
          * 터치한 자신을 뺀 둘러쌓인 8방향에 대해서 값을 구합니다.
          * 10 x 10의 맵에서는 왼쪽 위 대각선(오른쪽 아래 대각선) 위치와 터치한 부분의 위치 값의 차이는 11만큼 납니다.
-         * 이러한 차이 값을 MINE_CONST라고 정하고 8방향에 대해 mineArray안에 "mine"이 있는지 확인합니다.
+         * 이러한 차이 값은 게임맵 넓이 + 1 만큼 증가합니다. 이러한 값을
+         * MINE_CONST라고 정하고 8방향에 대해 mineArray안에 "mine"이 있는지 확인합니다.
          * 또한 왼쪽벽과 오른쪽벽 넘어서 지뢰 갯수를 세지 않도록 예외처리를 해줍니다.
          * **/
 
@@ -296,7 +294,6 @@ public class MainActivity extends Activity {
             if (!mapClickList.contains(position - MINE_CONST)) {
                 mineMapClick(position - MINE_CONST, parent);
             }
-
         }
 
         if (position - MINE_CONST + 1 > -1 && !mineArray[position - MINE_CONST + 1].equals("mine")) {
@@ -350,9 +347,7 @@ public class MainActivity extends Activity {
          * **/
 
         vibrator.vibrate(new long[]{100, 200, 100, 150}, -1);
-
         timerInit();
-
 
         for (int x = 0; x < mineList.size(); x++) {
             if (mineFlagList.contains(mineList.get(x))) {
@@ -390,6 +385,11 @@ public class MainActivity extends Activity {
     }
 
     public void timerInit() {
+
+        /**
+         * 타이머를 초기화합니다.
+         * **/
+
         try {
             mTimeTask.cancel();
             mTimer.cancel();
@@ -401,9 +401,13 @@ public class MainActivity extends Activity {
     }
 
     public void gameSetting(View v) {
+
+        /**
+         * 게임 설정값(가로 크기, 세로 크기, 지뢰 갯수)을 받습니다.
+         * **/
+
         final AlertDialog.Builder settingDialog = new AlertDialog.Builder(this);
         settingDialog.setTitle("GAME SETTING");
-
         View dialogView;
         LayoutInflater mInflater = LayoutInflater.from(this);
         dialogView = mInflater.inflate(R.layout.dialog_setting, null);
