@@ -15,6 +15,14 @@
         android:layout_width="match_parent"
         android:layout_height="40dp">
 
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:onClick="gameSetting"
+            android:text="SETTING" />
+
+
         <TextView
             android:id="@+id/timerTxt"
             android:layout_width="wrap_content"
@@ -31,14 +39,19 @@
             android:text="RETRY?" />
     </FrameLayout>
 
-    <GridView
-        android:id="@+id/mineMapGird"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="16dp"
-        android:columnWidth="4dp"
-        android:horizontalSpacing="4dp"
-        android:numColumns="10"
-        android:stretchMode="columnWidth"
-        android:verticalSpacing="4dp" />
+        android:layout_height="match_parent">
+
+        <me.ingeni.minefind.MineGridView
+            android:id="@+id/mineMapGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnWidth="4dp"
+            android:horizontalSpacing="4dp"
+            android:numColumns="11"
+            android:stretchMode="columnWidth"
+            android:verticalSpacing="4dp" />
+    </ScrollView>
+
 </LinearLayout>

@@ -5,8 +5,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-
-import java.util.List;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 /**
  * Created by jinseongho on 2016. 5. 10..
@@ -44,6 +44,7 @@ public class MineMapAdapter extends BaseAdapter {
         if (convertView == null) {
             convertView = mInflater.inflate(R.layout.row_gird_minemap, null);
         }
+
         return convertView;
     }
 }
