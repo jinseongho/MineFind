@@ -70,7 +70,7 @@ public class MainActivity extends Activity {
         mineMapGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(final AdapterView<?> parent, View view, final int position, long id) {
-                if (mapClickList.size() == 0) {
+                if (mapClickList.size() == 0 && mineFlagList.size() == 0) {
                     initPosition = position;
                     mineInit(MINE_MAP_RANGE, MINE_COUNT);
 
@@ -99,6 +99,11 @@ public class MainActivity extends Activity {
             public boolean onItemLongClick(final AdapterView<?> parent, View view, final int position, long id) {
                 final ImageView mineItem = (ImageView) parent.getChildAt(position).findViewById(R.id.mineBg);
                 TextView mineTxt = (TextView) parent.getChildAt(position).findViewById(R.id.mineTxt);
+
+                if (mapClickList.size() == 0 && mineFlagList.size() == 0) {
+                    initPosition = position;
+                    mineInit(MINE_MAP_RANGE, MINE_COUNT);
+                }
 
                 if (mineTxt.getText().length() == 0) {
                     if (!mineFlagList.contains(position)) {
