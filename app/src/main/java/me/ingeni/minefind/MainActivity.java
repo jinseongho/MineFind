@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -35,11 +36,12 @@ public class MainActivity extends Activity {
     private int MINE_CONST = MAP_WIDTH + 1; // 지뢰찾기게임의 규칙에 의한 지뢰 상수
 
 
-    private List<Integer> mineList; // 0~99까지 섞인 숫자를 넣은 List
+    private List<Integer> mineList = new ArrayList<>(); // 0~99까지 섞인 숫자를 넣은 List
     private List<Integer> mineFlagList = new ArrayList<>(); // 깃발을 세운 지점이 담긴 List
     private List<Integer> mapClickList = new ArrayList<>(); // 클릭한 위치를 담은 List
     private String[] mineArray; // 전체 게임 맵 크기만큼 지뢰가 있는지 없는지 정보를 담은 array
     private int actionCount = 0; // 지뢰를 안 밟고 끝까지 게임을 가는 경우 게임 횟수를 카운트하여 끝난 지점을 알기 위한 변수
+    private int initPosition = 0;
     private MineGridView mineMapGrid;
     private MineMapAdapter mineMapAdapter;
 
@@ -58,7 +60,8 @@ public class MainActivity extends Activity {
         mineMapGrid = (MineGridView) findViewById(R.id.mineMapGrid);
         timerTxt = (TextView) findViewById(R.id.timerTxt);
 
-        mineInit(MINE_MAP_RANGE, MINE_COUNT);
+        mineMapAdapter = new MineMapAdapter(MainActivity.this, MINE_MAP_RANGE);
+        mineMapGrid.setAdapter(mineMapAdapter);
 
         /**
          * ItemClick을 하면 mapClickList와 mineFlagList에 현재 위치값이 없으면 mineMapClick()을 실행합니다.
@@ -66,10 +69,23 @@ public class MainActivity extends Activity {
 
         mineMapGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(final AdapterView<?> parent, View view, final int position, long id) {
+                if (mapClickList.size() == 0) {
+                    initPosition = position;
+                    mineInit(MINE_MAP_RANGE, MINE_COUNT);
 
-                if (!mapClickList.contains(position) && !mineFlagList.contains(position)) {
-                    mineMapClick(position, parent);
+                    new Handler().postDelayed(new Runnable() {
+                        public void run() {
+                            if (!mapClickList.contains(position) && !mineFlagList.contains(position)) {
+                                mineMapClick(position, parent);
+                            }
+                        }
+                    }, 100);
+
+                } else {
+                    if (!mapClickList.contains(position) && !mineFlagList.contains(position)) {
+                        mineMapClick(position, parent);
+                    }
                 }
             }
         });
@@ -102,7 +118,6 @@ public class MainActivity extends Activity {
                                 mineFlagList.remove((Object) position);
                             }
                         }, 500);
-
                     }
                 }
                 return false;
@@ -113,43 +128,40 @@ public class MainActivity extends Activity {
 
     public void mineMapClick(final int position, final AdapterView<?> parent) {
         /**
-         * 처음 터치하였을 때 지뢰가 나오면 다시 시작하여 값을 받습니다. (좀 더 효율적인 방법이 있겠지만 ..)
-         * 빈 값 부분을 눌렀는데 깃발을 세운 지점일 경우 게임에 영향을 미치는 중복(actionCount, mineFindList에 담겨진 깃발 세운 position)을 제거합니다.
+         * 빈 값 부분을 눌렀을때 깃발을 세운 지점일 경우 게임에 영향을 미치는 중복(actionCount, mineFindList에 담겨진 깃발 세운 position)을 제거합니다.
+         * mineCountSearch()로 8방향의 지뢰를 탐색하여 0개 일떄는 회색으로 나타내고 주변에 지뢰가 있으면 지뢰 갯수를 표시합니다.
+         * 지뢰를 밟으면 게임이 종료 됩니다.
          * **/
 
         actionCount++;
-        if (actionCount == 1 && mineArray[position].equals("mine")) {
-            reTry(null);
+        int mineCountResult = 0;
+        if (!mapClickList.contains(position)) {
+            mapClickList.add(position);
+        }
+
+        if (actionCount == MINE_MAP_RANGE) {
+            gameOver(parent);
+        }
+        if (mineFlagList.contains(position)) {
+            actionCount--;
+            mineFlagList.remove((Object) position);
+        }
+
+        mineCountResult = mineCountSearch(position, MINE_MAP_RANGE);
+        ImageView mineItem = (ImageView) parent.getChildAt(position).findViewById(R.id.mineBg);
+        TextView mineTxt = (TextView) parent.getChildAt(position).findViewById(R.id.mineTxt);
+
+        if (mineArray[position].equals("mine")) {
+            gameOver(parent);
         } else {
-            int mineCountResult = 0;
-            if (!mapClickList.contains(position)) {
-                mapClickList.add(position);
-            }
-
-            if (actionCount == MINE_MAP_RANGE) {
-                gameOver(parent);
-            }
-            if (mineFlagList.contains(position)) {
-                actionCount--;
-                mineFlagList.remove((Object) position);
-            }
-
-            mineCountResult = mineCountSearch(position, MINE_MAP_RANGE);
-            ImageView mineItem = (ImageView) parent.getChildAt(position).findViewById(R.id.mineBg);
-            TextView mineTxt = (TextView) parent.getChildAt(position).findViewById(R.id.mineTxt);
-
-            if (mineArray[position].equals("mine")) {
-                gameOver(parent);
+            if (mineCountResult == 0) {
+                mineTxt.setText("" + mineCountResult);
+                mineTxt.setTextColor(Color.parseColor("#4D5052"));
+                mineItem.setBackgroundColor(Color.parseColor("#4D5052"));
+                mineEmptySearch(position, MINE_MAP_RANGE, parent);
             } else {
-                if (mineCountResult == 0) {
-                    mineTxt.setText("" + mineCountResult);
-                    mineTxt.setTextColor(Color.parseColor("#4D5052"));
-                    mineItem.setBackgroundColor(Color.parseColor("#4D5052"));
-                    mineEmptySearch(position, MINE_MAP_RANGE, parent);
-                } else {
-                    mineTxt.setText("" + mineCountResult);
-                    mineItem.setBackgroundColor(Color.parseColor("#000000"));
-                }
+                mineTxt.setText("" + mineCountResult);
+                mineItem.setBackgroundColor(Color.parseColor("#000000"));
             }
         }
     }
@@ -159,9 +171,11 @@ public class MainActivity extends Activity {
         /**
          * 0~99까지의 숫자를 랜덤하게 섞은 후 mineList에 담습니다.
          * mineList의 0~9번째 섞여진 숫자를 가져와 mineArray의 인덱스로 설정하고 "mine"으로 초기화 시켜줍니다.
-         * gridView를 adapter에 연결하여 게임 맵 사이즈 만큼 화면에 나타냅니다.
+         * remainList에는 지뢰가 없는 위치값을 담아두어 첫 터치시 지뢰 일 경우 게임을 종료하지 않고
+         * 처음 터치한 자리값을 remianList(0)로 교체합니다.
          * **/
 
+        List<Integer> remainList;
         mineArray = new String[mineMapRange];
         ArrayList<Integer> randomNumber = new ArrayList<>();
 
@@ -172,14 +186,17 @@ public class MainActivity extends Activity {
 
         Collections.shuffle(randomNumber);
         mineList = randomNumber.subList(0, mineCount);
-        Collections.sort(mineList);
+        remainList = randomNumber.subList(mineCount, mineMapRange);
+
+        for (int k = 0; k < mineList.size(); k++) {
+            if (initPosition == mineList.get(k)) {
+                mineList.set(k, remainList.get(0));
+            }
+        }
 
         for (int k = 0; k < mineCount; k++) {
             mineArray[mineList.get(k)] = "mine";
         }
-
-        mineMapAdapter = new MineMapAdapter(MainActivity.this, MINE_MAP_RANGE);
-        mineMapGrid.setAdapter(mineMapAdapter);
 
         mTimeTask = new TimerTask() {
             int time = 0;
@@ -205,7 +222,6 @@ public class MainActivity extends Activity {
         mTimer = new Timer();
         mTimer.schedule(mTimeTask, 0, 1000);
     }
-
 
     public int mineCountSearch(int position, int mineMapRange) {
 
@@ -376,12 +392,14 @@ public class MainActivity extends Activity {
          * **/
 
         timerInit();
+        timerTxt.setText("0m 0s");
         mineMapGrid.setEnabled(true);
         mineList.clear();
         mapClickList.clear();
         mineFlagList.clear();
         actionCount = 0;
-        mineInit(MINE_MAP_RANGE, MINE_COUNT);
+        mineMapAdapter = new MineMapAdapter(MainActivity.this, MINE_MAP_RANGE);
+        mineMapGrid.setAdapter(mineMapAdapter);
     }
 
     public void timerInit() {
@@ -406,8 +424,8 @@ public class MainActivity extends Activity {
          * 게임 설정값(가로 크기, 세로 크기, 지뢰 갯수)을 받습니다.
          * **/
 
-        final AlertDialog.Builder settingDialog = new AlertDialog.Builder(this);
-        settingDialog.setTitle("GAME SETTING");
+        final AlertDialog.Builder settingBuilder = new AlertDialog.Builder(this);
+        settingBuilder.setTitle("GAME SETTING");
         View dialogView;
         LayoutInflater mInflater = LayoutInflater.from(this);
         dialogView = mInflater.inflate(R.layout.dialog_setting, null);
@@ -419,37 +437,50 @@ public class MainActivity extends Activity {
         mapWidthEdit.setText("" + mineMapGrid.getNumColumns());
         mapHeightEdit.setText("" + MINE_MAP_RANGE / mineMapGrid.getNumColumns());
         mineCountEdit.setText("" + MINE_COUNT);
+        settingBuilder.setView(dialogView);
 
-        settingDialog.setView(dialogView);
-
-
-        settingDialog.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+        settingBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
+            }
+        });
 
-                if (Integer.parseInt(mapWidthEdit.getText().toString()) < 16 && Integer.parseInt(mapHeightEdit.getText().toString()) < 16) {
-                    if (Integer.parseInt(mineCountEdit.getText().toString()) != 0) {
-                        MINE_MAP_RANGE = Integer.parseInt(mapWidthEdit.getText().toString()) *
-                                Integer.parseInt(mapHeightEdit.getText().toString());
+        settingBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+            }
+        });
+
+        final AlertDialog settingDialog = settingBuilder.create();
+        settingDialog.show();
+        settingDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MINE_MAP_RANGE = Integer.parseInt(mapWidthEdit.getText().toString()) *
+                        Integer.parseInt(mapHeightEdit.getText().toString());
+
+
+                if (Integer.parseInt(mapWidthEdit.getText().toString()) < 16 && Integer.parseInt(mapHeightEdit.getText().toString()) < 16
+                        && Integer.parseInt(mapWidthEdit.getText().toString()) > 0 && Integer.parseInt(mapHeightEdit.getText().toString()) > 0) {
+                    if (Integer.parseInt(mineCountEdit.getText().toString()) != 0 && Integer.parseInt(mineCountEdit.getText().toString()) < MINE_MAP_RANGE) {
                         MINE_COUNT = Integer.parseInt(mineCountEdit.getText().toString());
                         MINE_CONST = Integer.parseInt(mapWidthEdit.getText().toString()) + 1;
                         mineMapGrid.setNumColumns(Integer.parseInt(mapWidthEdit.getText().toString()));
-
-                        dialog.dismiss();
+                        settingDialog.dismiss();
                         reTry(null);
                     } else {
-                        Toast.makeText(MainActivity.this, "지뢰크기는 최소 1개 입니다.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "지뢰 갯수는 최소 1개이상\n 최대 맵크기를 넘길 수 없습니다.", Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    Toast.makeText(MainActivity.this, "가로/세로 크기는 최대 크기는 15칸 입니다.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "가로/세로 크기는 최소 1이상\n 최대 크기는 15칸 입니다.", Toast.LENGTH_SHORT).show();
                 }
             }
         });
 
-        settingDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                dialog.dismiss();
+        settingDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                settingDialog.dismiss();
             }
         });
-        settingDialog.show();
+
     }
 }
